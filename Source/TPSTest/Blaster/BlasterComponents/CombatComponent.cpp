@@ -35,6 +35,18 @@ void UCombatComponent::BeginPlay()
 	
 }
 
+// Called every frame
+void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	//获取准心检测到的目标
+	FHitResult TraceHitResult;
+	TraceUnderCrosshairs(TraceHitResult);
+	
+	//设置hud准心
+	SetHUDCrosshair(DeltaTime);
+}
+
 void UCombatComponent::SetAiming(bool bIsAiming)
 {
 	//提前设置瞄准状态，以防网络差的时候，没同步到服务端的瞄准，导致延迟不流畅问题
@@ -116,8 +128,71 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
 			End,
 			ECC_Visibility
 		);
+		if (!TraceHitResult.bBlockingHit)
+		{
+			TraceHitResult.ImpactPoint = End;
+		}
+	}
+}
 
-
+void UCombatComponent::SetHUDCrosshair(float DeltaTime)
+{
+	if (Character == nullptr || Character == nullptr) return;
+	//判断当前是否获取了玩家控制，没获取的话本地存储的玩家控制器为空，获取玩家控制器；当玩家控制器不为空是直接用原来存储的玩家控制器即可，减少cast函数使用
+	Controller = Controller == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : Controller;
+	//获取到玩家控制器后设置hud
+	if (Controller)
+	{
+		HUD = HUD == nullptr ? Cast<ABlasterHUD>(Controller->GetHUD()) : HUD;
+		if (HUD)
+		{
+			FHUDPackage HudPackage;
+			if (EquippedWeapon)
+			{
+				//获取到hud后从装备的武器类中获取武器内置HUD的Texture2d参数
+				HudPackage.CrosshairCenter = EquippedWeapon->CrosshairCenter;
+				HudPackage.CrosshairTop = EquippedWeapon->CrosshairTop;
+				HudPackage.CrosshairLeft = EquippedWeapon->CrosshairLeft;
+				HudPackage.CrosshairRight = EquippedWeapon->CrosshairRight;
+				HudPackage.CrosshairBottom = EquippedWeapon->CrosshairBottom;
+				
+				//获取速度范围和转换速度的比值
+				FVector2d WalkSpeedRange(0.f, 0.f);
+				if (Character->GetMovementComponent()->IsCrouching())
+				{
+					WalkSpeedRange.Y = 600.f;
+				}
+				else
+				{
+					WalkSpeedRange.Y = Character->GetMovementComponent()->GetMaxSpeed();
+				}
+				FVector2d VelocityMultiplierRange(0.f, 1.f);
+				//获取当前的速度
+				FVector Velocity = Character->GetVelocity();
+				Velocity.Z = 0.f;
+				CrosshairVelocityFactor = FMath::GetMappedRangeValueClamped(WalkSpeedRange, VelocityMultiplierRange, Velocity.Size());
+				UE_LOG(LogTemp, Warning, TEXT("当前速度:%f"), CrosshairVelocityFactor);
+				if (Character->GetMovementComponent()->IsFalling())//判断角色是否在空中，如果在空中就计算空中的clamp值
+				{
+					CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 2.25f, DeltaTime, 2.25f);
+				}
+				else
+				{
+					CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 0.f, DeltaTime, 30.f);
+				}
+				HudPackage.CrosshairSpread = CrosshairVelocityFactor + CrosshairInAirFactor;
+			}
+			else
+			{
+				HudPackage.CrosshairCenter = nullptr;
+				HudPackage.CrosshairTop = nullptr;
+				HudPackage.CrosshairLeft = nullptr;
+				HudPackage.CrosshairRight = nullptr;
+				HudPackage.CrosshairBottom = nullptr;
+				HudPackage.CrosshairSpread = 0;
+			}
+			HUD->SetHUDPackage(HudPackage);
+		}
 	}
 }
 
@@ -156,14 +231,6 @@ void UCombatComponent::OnRep_EquippedWeapon()
 }
 
 
-// Called every frame
-void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	//获取准心检测到的目标
-	FHitResult TraceHitResult;
-	TraceUnderCrosshairs(TraceHitResult);
-}
 
 //添加需要复制的属性:武器
 void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

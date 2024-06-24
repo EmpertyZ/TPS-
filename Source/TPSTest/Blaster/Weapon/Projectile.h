@@ -21,6 +21,11 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	//当actor被销毁时调用
+	virtual void Destroyed() override;
+	
+	UFUNCTION()
+	virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 private:
 	UPROPERTY(EditAnywhere)
 	UBoxComponent* CollisionBox;
@@ -32,6 +37,9 @@ private:
 	class UParticleSystem* Tracer;//弹道效果
 	class UParticleSystemComponent* TracerComponent;//弹道效果组件
 
-	
+	UPROPERTY(EditAnywhere)
+	UParticleSystem* ImpactParticles;//子弹击中特效
+	UPROPERTY(EditAnywhere)
+	class USoundCue* ImpactSound;//子弹击中音效
 
 };

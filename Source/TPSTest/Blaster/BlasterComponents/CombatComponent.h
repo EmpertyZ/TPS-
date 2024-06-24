@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "TPSTest/Blaster/HUD/BlasterHUD.h"
+#include "TPSTest/Blaster/PlayerController/BlasterPlayerController.h"
 #include "CombatComponent.generated.h"
 
 class AWeapon;
@@ -40,6 +42,8 @@ protected:
 	void MulticastFire(const FVector_NetQuantize& TraceHitTarget);//多端开火同步
 
 	void TraceUnderCrosshairs(FHitResult& TraceHitResult);//准心射击检测
+
+	void SetHUDCrosshair(float DeltaTime);//设置hud准心
 public:
 	//添加友元类，友元类或友元函数可以调用类的private成员
 	friend class ABlasterCharacter;
@@ -52,8 +56,10 @@ public:
 	void OnRep_EquippedWeapon();
 
 private:
-	ABlasterCharacter* Character;
-
+	ABlasterCharacter* Character;//玩家控制的角色
+	ABlasterPlayerController* Controller;//玩家控制，PlayerController可以获取hud
+	ABlasterHUD* HUD;//用于存储获取到的hud
+	
 	UPROPERTY(ReplicatedUsing = OnRep_EquippedWeapon)
 	AWeapon* EquippedWeapon; //因为需要知道当前武器的状态和其他属性，所以需要将其设为网络同步
 
@@ -67,5 +73,9 @@ private:
 
 	bool bFireButtonPressed;//判断是否处于开火状态
 
+	//用来存储移动后的clamp值
+	float CrosshairVelocityFactor;
+	//用来存储空中下落的clamp值
+	float CrosshairInAirFactor;
 }
 ;

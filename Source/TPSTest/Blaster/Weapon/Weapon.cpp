@@ -4,6 +4,7 @@
 #include "Weapon.h"
 
 #include "Components/WidgetComponent.h"
+#include "Engine/SkeletalMeshSocket.h"
 #include "Net/UnrealNetwork.h"
 #include "TPSTest/Blaster/Character/BlasterCharacter.h"
 
@@ -111,6 +112,22 @@ void AWeapon::Fire(const FVector& HitTarget)
 	if (FireAnimation)
 	{
 		WeaponMesh->PlayAnimation(FireAnimation, false);
+	}
+	//获取武器生成子弹socket
+	const USkeletalMeshSocket* AmmoEjectSocket = GetWeaponMesh()->GetSocketByName(FName("AmmoEject"));
+	//生成子弹壳
+	if (AmmoEjectSocket)
+	{
+		//通过socket获取变换
+		FTransform SocketTransform = AmmoEjectSocket->GetSocketTransform(GetWeaponMesh());
+		if (CasingClass)
+		{
+			UWorld* World = GetWorld();
+			if (World)
+			{
+				World->SpawnActor<ACasing>(CasingClass, SocketTransform.GetLocation(), SocketTransform.GetRotation().Rotator());
+			}
+		}
 	}
 }
 

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Casing.h"
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
 #include "GameFramework/Actor.h"
@@ -53,6 +54,7 @@ protected:
 			int32 OtherBodyIndex
 	);
 
+
 public:	
 	void ShowPickupWidget(bool bWasShowPickup);
 
@@ -63,6 +65,19 @@ public:
 	//武器mesh的getter
 	FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; }
 	virtual void Fire(const FVector& HitTarget);
+
+		
+	//武器准心,资产
+	UPROPERTY(EditAnywhere, Category="Weapon Crosshair")
+	UTexture2D* CrosshairCenter;//准心中间
+	UPROPERTY(EditAnywhere, Category="Weapon Crosshair")
+	UTexture2D* CrosshairTop;//准心顶部
+	UPROPERTY(EditAnywhere, Category="Weapon Crosshair")
+	UTexture2D* CrosshairLeft;//准心左侧
+	UPROPERTY(EditAnywhere, Category="Weapon Crosshair")
+	UTexture2D* CrosshairRight;//准心右侧
+	UPROPERTY(EditAnywhere, Category="Weapon Crosshair")
+	UTexture2D* CrosshairBottom;//准心底部
 private:
 	//创建武器mesh
 	UPROPERTY(EditAnywhere, Category="Weapon Properties")
@@ -77,8 +92,11 @@ private:
 	UWidgetComponent* PickupWidget;
 	UPROPERTY(EditAnywhere, Category="Weapon Properties")
 	UAnimationAsset* FireAnimation;
+
+	UPROPERTY(EditAnywhere, Category="Weapon Properties")
+	TSubclassOf<ACasing> CasingClass;
 	
 	UFUNCTION()
 	void OnRep_WeaponState();//绑定武器状态复制的方法,当武器状态更新时调用该方法
-	
+
 };
